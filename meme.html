@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator Pro</title>
+    <link rel="stylesheet" href="https://cdn.squeleton.dev/squeleton.v4.min.css">
+    <script src="https://cdn.squeleton.dev/squeleton-main.v4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0a0a12;
+            --bg-card: #12121f;
+            --bg-input: #0e0e1a;
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.35);
+            --green: #10b981;
+            --green-glow: rgba(16, 185, 129, 0.3);
+            --text-primary: #f1f5f9;
+            --text-secondary: #64748b;
+            --text-muted: #475569;
+            --border-color: #1e1e35;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        .glow-bg {
+            position: fixed;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 400px;
+            background: radial-gradient(ellipse, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 1;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-field {
+            background: var(--bg-input);
+            border: 1.5px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 13px 16px;
+            font-size: 15px;
+            width: 100%;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        .input-field:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .input-field::placeholder { color: var(--text-muted); }
+
+        select.input-field {
+            appearance: none;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 40px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--accent-glow);
+        }
+
+        .btn-primary:active { transform: translateY(0); }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--green), #059669);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            width: 100%;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px var(--green-glow);
+        }
+
+        .qr-preview {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            display: none;
+        }
+
+        .qr-preview img, .qr-preview canvas {
+            display: block;
+            margin: 0 auto;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: var(--accent);
+            padding: 5px 14px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, #6366f1, #a78bfa, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--border-color), transparent);
+            margin: 20px 0;
+        }
+
+        .success-msg {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: var(--green);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .success-msg.show { display: flex; }
+
+        .feature-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        /* ===== TROLLAGEM OCULTA ===== */
+        .rick-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rick-overlay.active {
+            display: flex;
+        }
+
+        .rick-overlay iframe {
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 16/9;
+            border: none;
+            border-radius: 12px;
+        }
+
+        .rick-overlay .close-rick {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .rick-overlay .close-rick:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .rick-text {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 20px;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .fake-loader {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .fake-loader.show { display: flex; }
+
+        .loader-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-input);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .loader-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), #8b5cf6);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .loader-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="glow-bg"></div>
+
+    <!-- Rick Roll Overlay -->
+    <div class="rick-overlay" id="rick-overlay">
+        <button class="close-rick" onclick="closeRick()">&#10005;</button>
+        <iframe id="rick-video" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+        <div class="rick-text">You just got Rick Rolled! &#128514;</div>
+    </div>
+
+    <main>
+        <section class="f-justify-center f-items-center p-20-all" style="min-height: 100dvh;">
+            <div class="w-500px xs-w-100">
+
+                <!-- Header (identico ao oficial) -->
+                <div class="text-center m-40-b xs-m-25-b wow fadeInDown">
+                    <div class="m-12-b">
+                        <span class="pill">QR Generator</span>
+                    </div>
+                    <h1 class="fs-14 xs-fs-12 fw-700 lh-1-1 m-10-b">
+                        QR Code <span class="text-gradient">Pro</span>
+                    </h1>
+                    <p class="fs-8 xs-fs-7" style="color: var(--text-secondary);">
+                        Gere QR Codes personalizados em segundos
+                    </p>
+                </div>
+
+                <!-- Card (parece identico, mas e troll) -->
+                <div class="card p-30-all xs-p-20-all wow fadeInUp">
+
+                    <!-- Input URL -->
+                    <div class="input-group m-20-b">
+                        <label>URL do site</label>
+                        <input type="url" id="url-input" class="input-field" placeholder="https://exemplo.com">
+                    </div>
+
+                    <!-- Opcoes (fachada) -->
+                    <div class="d-flex f-gap-15 m-25-b">
+                        <div class="f-grow-1">
+                            <div class="input-group">
+                                <label>Tamanho</label>
+                                <select id="qr-size" class="input-field">
+                                    <option value="200">200 x 200</option>
+                                    <option value="300" selected>300 x 300</option>
+                                    <option value="400">400 x 400</option>
+                                    <option value="512">512 x 512</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="f-grow-1">
+                            <div class="input-group">
+                                <label>Qualidade</label>
+                                <select class="input-field">
+                                    <option>Alta (HD)</option>
+                                    <option>Media</option>
+                                    <option>Baixa</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gerar -->
+                    <button class="btn-primary" onclick="generateQR()">
+                        Gerar QR Code
+                    </button>
+
+                    <!-- Fake Loader -->
+                    <div class="fake-loader" id="fake-loader">
+                        <div class="loader-bar">
+                            <div class="loader-bar-fill" id="loader-fill"></div>
+                        </div>
+                        <span class="loader-text" id="loader-text">Gerando QR Code...</span>
+                    </div>
+
+                    <!-- QR Output -->
+                    <div id="qr-output" style="display: none;">
+                        <div class="divider"></div>
+
+                        <div class="qr-preview m-15-b" id="qr-preview">
+                            <div id="qrcode"></div>
+                        </div>
+
+                        <div class="success-msg m-10-b" id="success-msg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                            QR Code gerado com sucesso!
+                        </div>
+
+                        <button class="btn-success" onclick="downloadQR()">
+                            Baixar PNG
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="d-flex f-gap-10 m-25-t wow fadeInUp" data-wow-delay="0.15s">
+                    <div class="feature-card f-grow-1">
+                        <div class="fs-11 m-5-b">&#9889;</div>
+                        <div class="fs-5 fw-600">Rapido</div>
+                    </div>
+                    <div class="feature-card f-grow-1">
+                        <div class="fs-11 m-5-b">&#127912;</div>
+                        <div class="fs-5 fw-600">Custom</div>
+                    </div>
+                    <div class="feature-card f-grow-1">
+                        <div class="fs-11 m-5-b">&#128229;</div>
+                        <div class="fs-5 fw-600">Download</div>
+                    </div>
+                    <div class="feature-card f-grow-1">
+                        <div class="fs-11 m-5-b">&#9889;</div>
+                        <div class="fs-5 fw-600">HD</div>
+                    </div>
+                </div>
+
+                <footer class="text-center m-30-t">
+                    <p class="fs-4" style="color: var(--text-muted);">
+                        Precisa de um real? Use o <a href="index.html">gerador oficial</a>
+                    </p>
+                </footer>
+
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.squeleton.dev/squeleton-scripts.v4.min.js"></script>
+    <script>
+        const BAIT_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+        let qrInstance = null;
+        let trollCount = 0;
+
+        function generateQR() {
+            const input = document.getElementById('url-input');
+            const loader = document.getElementById('fake-loader');
+            const loaderFill = document.getElementById('loader-fill');
+            const loaderText = document.getElementById('loader-text');
+
+            // Se nao digitou nada, preenche pra parecer real
+            if (!input.value.trim()) {
+                input.value = "https://meusite.com.br";
+            }
+
+            // Esconde output anterior
+            document.getElementById('qr-output').style.display = 'none';
+
+            // Mostra fake loader com etapas
+            loader.classList.add('show');
+            loaderFill.style.width = '0%';
+            loaderText.textContent = 'Processando URL...';
+
+            const steps = [
+                { width: '25%', text: 'Processando URL...', time: 400 },
+                { width: '50%', text: 'Gerando matriz de dados...', time: 800 },
+                { width: '75%', text: 'Renderizando QR Code...', time: 1200 },
+                { width: '100%', text: 'Finalizando...', time: 1600 },
+            ];
+
+            steps.forEach(step => {
+                setTimeout(() => {
+                    loaderFill.style.width = step.width;
+                    loaderText.textContent = step.text;
+                }, step.time);
+            });
+
+            // Depois do loader, mostra o QR (que sempre e o bait)
+            setTimeout(() => {
+                loader.classList.remove('show');
+                showQR();
+            }, 2200);
+        }
+
+        function showQR() {
+            const size = parseInt(document.getElementById('qr-size').value);
+            const container = document.getElementById('qrcode');
+
+            container.innerHTML = '';
+            qrInstance = null;
+
+            // SEMPRE gera com a URL do Rick Astley
+            qrInstance = new QRCode(container, {
+                text: BAIT_URL,
+                width: size,
+                height: size,
+                colorDark: "#0a0a12",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H,
+            });
+
+            document.getElementById('qr-output').style.display = 'block';
+            document.getElementById('qr-preview').style.display = 'block';
+            document.getElementById('success-msg').classList.add('show');
+
+            const preview = document.getElementById('qr-preview');
+            preview.classList.add('animated', 'zoomIn');
+            setTimeout(() => preview.classList.remove('animated', 'zoomIn'), 600);
+        }
+
+        function downloadQR() {
+            trollCount++;
+
+            // No 2o download, mostra o rick roll na tela tambem
+            if (trollCount >= 2) {
+                showRick();
+            }
+
+            const canvas = document.querySelector('#qrcode canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = 'qrcode.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                return;
+            }
+            const img = document.querySelector('#qrcode img');
+            if (img) {
+                const link = document.createElement('a');
+                link.download = 'qrcode.png';
+                link.href = img.src;
+                link.click();
+            }
+        }
+
+        function showRick() {
+            const overlay = document.getElementById('rick-overlay');
+            const video = document.getElementById('rick-video');
+            video.src = "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&start=0";
+            overlay.classList.add('active');
+        }
+
+        function closeRick() {
+            const overlay = document.getElementById('rick-overlay');
+            const video = document.getElementById('rick-video');
+            video.src = "";
+            overlay.classList.remove('active');
+        }
+
+        // Enter pra gerar
+        document.getElementById('url-input').addEventListener('keypress', e => {
+            if (e.key === 'Enter') generateQR();
+        });
+    </script>
+</body>
+</html>
